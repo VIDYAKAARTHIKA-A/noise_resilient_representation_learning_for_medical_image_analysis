@@ -1,0 +1,18 @@
+{
+  "data_dir": "data/isic2019/ISIC2019 256x256 jpeg",
+  "csv_path": "data/isic2019/ISIC2019 256x256 jpeg/train.csv",
+  "image_dir": "data/isic2019/ISIC2019 256x256 jpeg/train",
+  "batch_size": 128,
+  "num_workers": 4,
+  "image_size": 128,
+  "epochs": 100,
+  "patience": 5,
+  "learning_rate": 0.001,
+  "weight_decay": 1e-4,
+  "simclr_epochs": 15,
+  "simclr_lr": 0.001,
+  "simclr_temperature": 0.5,
+  "simclr_proj_dim": 128,
+  "noise_levels": [0.0, 0.1, 0.2, 0.3, 0.4],
+  "seed": 42
+}
