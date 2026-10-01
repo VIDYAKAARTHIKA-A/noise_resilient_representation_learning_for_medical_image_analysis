@@ -8,24 +8,27 @@ from src.train_supervised import train_supervised
 def run_all_experiments():
     config = load_config('config.json')
     noise_levels = config['noise_levels']
-    
+
+    # Three-stage design:
+    #   baseline        - ImageNet-pretrained ResNet-18, supervised only
+    #   simclr_finetune - SimCLR-pretrained ResNet-18, plain supervised fine-tuning
+    #   full_proposed   - SimCLR + class-wise GMM + class-quantile curriculum
+    #                     + clean-effective class balancing + Focal/SCE loss
     stages = [
         'baseline',
         'simclr_finetune',
-        'simclr_gmm',
-        'simclr_gmm_curriculum',
         'full_proposed'
     ]
-    
+
     # 1. Train SimCLR once
     if not os.path.exists('checkpoints/simclr_best.pth'):
         print("=== Starting SimCLR Pretraining ===")
         train_simclr(config)
     else:
         print("=== SimCLR Checkpoint Found, Skipping Pretraining ===")
-        
+
     # 2. Run all stages across all noise levels
-    
+
     # Load existing results to allow resuming
     completed_runs = set()
     if os.path.exists('results.json'):
@@ -40,16 +43,16 @@ def run_all_experiments():
                 print(f"=== Skipping {run_name} (already completed) ===")
                 continue
             train_supervised(config, noise, stage, run_name)
-            
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--run_all', action='store_true', help="Run the full pipeline")
     parser.add_argument('--simclr_only', action='store_true', help="Run only SimCLR pretraining")
     parser.add_argument('--stage', type=str, default=None, help="Run specific stage")
     parser.add_argument('--noise', type=float, default=0.0, help="Noise level")
-    
+
     args = parser.parse_args()
-    
+
     if args.run_all:
         run_all_experiments()
     elif args.simclr_only:
