@@ -78,18 +78,26 @@ class UnifiedDynamicHybridLoss(nn.Module):
         # Initialize uniform weights as default baseline
         self.register_buffer('class_weights', torch.ones(num_classes))
         
-    def update_dynamic_weights(self, selected_indices, all_targets, all_clean_probs):
+    def update_dynamic_weights(self, selected_indices, all_targets, all_clean_probs, all_indices):
         """
         Closed-Loop update method called at the turn of every epoch.
         Calculates E_c(t) and updates the cost-sensitive class weights.
+
+        selected_indices: dataset indices kept by the curriculum.
+        all_targets / all_clean_probs / all_indices: aligned arrays (one entry per
+        sample) so that position i in each array refers to dataset index all_indices[i].
         """
+        all_targets = np.asarray(all_targets)
+        all_clean_probs = np.asarray(all_clean_probs, dtype=np.float64)
+        all_indices = np.asarray(all_indices)
+
         E_c = np.zeros(self.num_classes)
-        
+
         # 1. Sum up the expected clean probability scores inside the selected curriculum filter
-        for idx in selected_indices:
-            c = all_targets[idx]
-            E_c[c] += all_clean_probs[idx]
-            
+        selected_mask = np.isin(all_indices, np.asarray(selected_indices))
+        for c in range(self.num_classes):
+            E_c[c] = all_clean_probs[selected_mask & (all_targets == c)].sum()
+
         # 2. Compute the dynamic inverse effective volume weights
         new_weights = np.ones(self.num_classes)
         for c in range(self.num_classes):

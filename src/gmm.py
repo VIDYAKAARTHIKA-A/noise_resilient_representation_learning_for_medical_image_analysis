@@ -44,7 +44,6 @@ def estimate_clean_probabilities(model, dataloader, device, nu=10.0):
     # Pre-allocate array for clean probabilities across all samples
     clean_prob = np.zeros_like(normalized_losses)
     unique_classes = np.unique(all_targets)
-    class_gmms = {}
 
     # 4. Class-Wise Probabilistic Noise Partitioning Loop
     for c in unique_classes:
@@ -67,8 +66,11 @@ def estimate_clean_probabilities(model, dataloader, device, nu=10.0):
         # Apply the Hierarchical Shared-Variance Prior formula
         adjusted_variances = (N_c * raw_variances + nu * global_loss_variance) / (N_c + nu)
         
-        # Override the GMM's covariance matrix with regularized variables before prediction
+        # Override the GMM's covariance matrix with regularized variables before prediction.
+        # scikit-learn's predict_proba uses precisions_cholesky_ (not covariances_), so
+        # that must be updated too or the shared-variance prior has no effect.
         gmm.covariances_ = adjusted_variances.reshape(-1, 1, 1)
+        gmm.precisions_cholesky_ = (1.0 / np.sqrt(adjusted_variances)).reshape(-1, 1, 1)
         
         # Compute posteriors based on the regularized variance matrices
         prob = gmm.predict_proba(class_losses)
@@ -76,10 +78,10 @@ def estimate_clean_probabilities(model, dataloader, device, nu=10.0):
         # Map the clean component to the smaller mean loss cluster within this class
         clean_idx = gmm.means_.argmin()
         clean_prob[class_mask] = prob[:, clean_idx]
-        class_gmms[c] = gmm
     
     # 5. Map probabilities back to their unique original indices
     idx_to_prob = {int(idx): prob for idx, prob in zip(all_indices, clean_prob)}
     
-    # Retained original signature variables along with target array needed for curriculum step
-    return idx_to_prob, all_losses, clean_prob, class_gmms, all_targets
+    # Returns: (idx -> clean prob dict, raw losses, clean probs, targets, dataset indices)
+    # All arrays are aligned: position i in each refers to dataset index all_indices[i].
+    return idx_to_prob, all_losses, clean_prob, all_targets, all_indices

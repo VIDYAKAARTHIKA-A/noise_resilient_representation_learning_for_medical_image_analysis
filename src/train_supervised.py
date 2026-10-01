@@ -1,19 +1,22 @@
 import os
+import copy
 import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
-from .dataset import get_dataloaders
+from .dataset import get_dataloaders, get_transforms
 from .models import ResNet18Classifier
 from .utils import EarlyStopping, evaluate_model, save_results
 from .gmm import estimate_clean_probabilities
+from .curriculum import run_class_quantile_curriculum
 from .losses import UnifiedDynamicHybridLoss  # Import the new unified loss engine
 
 def train_supervised(config, noise_level, stage, run_name):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"[{run_name}] Training stage '{stage}' at {noise_level*100}% noise on {device}")
     
+    os.makedirs('checkpoints', exist_ok=True)
     train_loader, val_loader, test_loader, num_classes, static_class_weights, train_dataset = get_dataloaders(config, noise_level)
     
     pretrained_path = None
@@ -32,10 +35,23 @@ def train_supervised(config, noise_level, stage, run_name):
         # Initialize the dynamic, closed-loop hybrid loss system
         criterion = UnifiedDynamicHybridLoss(num_classes=num_classes).to(device)
     else:
-        # Standard Cross Entropy baseline setup matching original intent
-        criterion = nn.CrossEntropyLoss(reduction='mean')
-        static_class_weights = static_class_weights.to(device)
+        # Standard (class-weighted) Cross Entropy for all non-proposed stages
+        criterion = nn.CrossEntropyLoss(weight=static_class_weights.to(device), reduction='mean')
         
+    # Loader used only for GMM scoring: no shuffling, no random augmentation and no
+    # dropped samples, so every training sample is scored once and indices line up.
+    gmm_loader = None
+    if is_proposed:
+        _, eval_transform = get_transforms(config['image_size'])
+        gmm_dataset = copy.copy(train_dataset)
+        gmm_dataset.transform = eval_transform
+        gmm_loader = DataLoader(
+            gmm_dataset,
+            batch_size=train_loader.batch_size,
+            shuffle=False,
+            num_workers=train_loader.num_workers
+        )
+
     epochs = config['epochs']
     early_stopping = EarlyStopping(patience=config['patience'], mode='max')
     checkpoint_path = f"checkpoints/{run_name}.pth"
@@ -53,7 +69,6 @@ def train_supervised(config, noise_level, stage, run_name):
         print(f"Resumed at epoch {start_epoch}")
         
     for epoch in range(start_epoch, epochs):
-        model.train()
         running_loss = 0.0
         
         # -------------------------------------------------------------------------
@@ -61,8 +76,8 @@ def train_supervised(config, noise_level, stage, run_name):
         # -------------------------------------------------------------------------
         if is_proposed:
             # 1. Run the hierarchical class-wise GMM matching your updated signature
-            _, clean_prob, _, all_targets, all_indices = estimate_clean_probabilities(
-                model, train_loader, device, nu=10.0
+            _, _, clean_prob, all_targets, all_indices = estimate_clean_probabilities(
+                model, gmm_loader, device, nu=10.0
             )
             
             # 2. Extract balanced indices via class-quantile filtering adjustments
@@ -91,7 +106,8 @@ def train_supervised(config, noise_level, stage, run_name):
                 batch_size=train_loader.batch_size, 
                 shuffle=True,
                 num_workers=train_loader.num_workers,
-                pin_memory=train_loader.pin_memory if hasattr(train_loader, 'pin_memory') else False
+                pin_memory=train_loader.pin_memory,
+                drop_last=len(active_subset) > train_loader.batch_size
             )
         else:
             # Baseline execution paths use standard unweighted dataloader arrays
@@ -100,6 +116,7 @@ def train_supervised(config, noise_level, stage, run_name):
         # -------------------------------------------------------------------------
         # PART C: Gradient Execution Step
         # -------------------------------------------------------------------------
+        model.train()  # GMM scoring switches the model to eval mode, so reset it here
         pbar = tqdm(active_loader, desc=f"Epoch {epoch+1}/{epochs}")
         for inputs, targets, _, _ in pbar:
             inputs, targets = inputs.to(device), targets.to(device)
@@ -107,13 +124,10 @@ def train_supervised(config, noise_level, stage, run_name):
             optimizer.zero_grad()
             outputs = model(inputs)
             
-            if is_proposed:
-                # The dynamic weight tensor maps directly to inputs internally inside forward pass
-                loss = criterion(outputs, targets)
-            else:
-                # Standard Cross Entropy baseline computation path
-                loss = F.cross_entropy(outputs, targets, weight=static_class_weights)
-                
+            # Both criteria take (logits, targets); the proposed loss applies its
+            # dynamic class weights internally, the baseline uses the static weights.
+            loss = criterion(outputs, targets)
+
             loss.backward()
             optimizer.step()
             
@@ -141,7 +155,7 @@ def train_supervised(config, noise_level, stage, run_name):
             break
             
     # Load best model and evaluate on test set
-    model.load_state_dict(torch.load(checkpoint_path))
+    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
     test_results = evaluate_model(model, test_loader, device, num_classes)
     
     test_results['stage'] = stage
