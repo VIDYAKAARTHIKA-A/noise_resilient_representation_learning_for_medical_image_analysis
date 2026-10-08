@@ -1,5 +1,5 @@
 {
-  "data_dir": "data/isic2019/ISIC2019 256x256 jpeg",
+  "data_dir": "data/isic2019/ISIC2019 ",
   "csv_path": "data/isic2019/ISIC2019 256x256 jpeg/train.csv",
   "image_dir": "data/isic2019/ISIC2019 256x256 jpeg/train",
   "batch_size": 128,

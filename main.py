@@ -1,11 +1,14 @@
 import os
 import argparse
 import json
+import torch.multiprocessing as mp
 from src.utils import load_config
 from src.train_simclr import train_simclr
 from src.train_supervised import train_supervised
 
-def run_all_experiments():
+mp.set_sharing_strategy('file_system')
+
+def run_all_experiments(force=False):
     config = load_config('config.json')
     noise_levels = config['noise_levels']
 
@@ -21,7 +24,7 @@ def run_all_experiments():
     ]
 
     # 1. Train SimCLR once
-    if not os.path.exists('checkpoints/simclr_best.pth'):
+    if force or not os.path.exists('checkpoints/simclr_best.pth'):
         print("=== Starting SimCLR Pretraining ===")
         train_simclr(config)
     else:
@@ -39,7 +42,7 @@ def run_all_experiments():
     for stage in stages:
         for noise in noise_levels:
             run_name = f"{stage}_noise_{int(noise*100)}"
-            if run_name in completed_runs:
+            if run_name in completed_runs and not force:
                 print(f"=== Skipping {run_name} (already completed) ===")
                 continue
             train_supervised(config, noise, stage, run_name)
@@ -50,11 +53,12 @@ if __name__ == '__main__':
     parser.add_argument('--simclr_only', action='store_true', help="Run only SimCLR pretraining")
     parser.add_argument('--stage', type=str, default=None, help="Run specific stage")
     parser.add_argument('--noise', type=float, default=0.0, help="Noise level")
+    parser.add_argument('--force', action='store_true', help="Re-run everything, ignoring existing checkpoints and results")
 
     args = parser.parse_args()
 
     if args.run_all:
-        run_all_experiments()
+        run_all_experiments(force=args.force)
     elif args.simclr_only:
         config = load_config('config.json')
         train_simclr(config)
