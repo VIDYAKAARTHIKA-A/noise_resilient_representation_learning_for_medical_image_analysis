@@ -1,10 +1,18 @@
 import json
 import os
-import torch
+import random
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import torch
+from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                             f1_score, confusion_matrix)
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
 
 class EarlyStopping:
     def __init__(self, patience=5, mode='max', min_delta=1e-4):
@@ -14,77 +22,68 @@ class EarlyStopping:
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        
+
     def __call__(self, metric, model, path):
+        """After the call, counter == 0 means this epoch was the new best (and was saved)."""
         score = metric if self.mode == 'max' else -metric
-        
-        if self.best_score is None:
+        if self.best_score is None or score >= self.best_score + self.min_delta:
             self.best_score = score
-            self.save_checkpoint(model, path)
-        elif score < self.best_score + self.min_delta:
+            self.counter = 0
+            torch.save(model.state_dict(), path)
+        else:
             self.counter += 1
             if self.counter >= self.patience:
                 self.early_stop = True
-        else:
-            self.best_score = score
-            self.save_checkpoint(model, path)
-            self.counter = 0
-            
-    def save_checkpoint(self, model, path):
-        torch.save(model.state_dict(), path)
 
-def evaluate_model(model, dataloader, device, num_classes):
+
+def evaluate_model(model, dataloader, device, num_classes, logit_adjust=None):
+    """logit_adjust: optional tensor (C,) SUBTRACTED from logits (post-hoc logit adjustment)."""
     model.eval()
-    all_preds = []
-    all_targets = []
-    
+    preds_all, targets_all = [], []
     with torch.no_grad():
         for inputs, targets, _, _ in dataloader:
-            inputs = inputs.to(device)
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
-            
-            all_preds.extend(preds.cpu().numpy())
-            all_targets.extend(targets.numpy())
-            
-    acc = accuracy_score(all_targets, all_preds)
-    mac_p = precision_score(all_targets, all_preds, average='macro', zero_division=0)
-    mac_r = recall_score(all_targets, all_preds, average='macro', zero_division=0)
-    mac_f1 = f1_score(all_targets, all_preds, average='macro', zero_division=0)
-    wt_f1 = f1_score(all_targets, all_preds, average='weighted', zero_division=0)
-    
-    per_class_f1 = f1_score(all_targets, all_preds, average=None, zero_division=0)
-    cm = confusion_matrix(all_targets, all_preds, labels=range(num_classes))
-    
+            out = model(inputs.to(device))
+            if logit_adjust is not None:
+                out = out - logit_adjust.to(device)
+            preds_all.extend(out.argmax(1).cpu().numpy())
+            targets_all.extend(targets.numpy())
+
+    labels = list(range(num_classes))
     return {
-        'accuracy': acc,
-        'macro_precision': mac_p,
-        'macro_recall': mac_r,
-        'macro_f1': mac_f1,
-        'weighted_f1': wt_f1,
-        'per_class_f1': per_class_f1.tolist(),
-        'confusion_matrix': cm.tolist()
+        'accuracy': accuracy_score(targets_all, preds_all),
+        'macro_precision': precision_score(targets_all, preds_all, average='macro', zero_division=0),
+        'macro_recall': recall_score(targets_all, preds_all, average='macro', zero_division=0),
+        'balanced_accuracy': recall_score(targets_all, preds_all, labels=labels, average='macro', zero_division=0),
+        'macro_f1': f1_score(targets_all, preds_all, average='macro', zero_division=0),
+        'weighted_f1': f1_score(targets_all, preds_all, average='weighted', zero_division=0),
+        'per_class_f1': f1_score(targets_all, preds_all, labels=labels, average=None, zero_division=0).tolist(),
+        'per_class_recall': recall_score(targets_all, preds_all, labels=labels, average=None, zero_division=0).tolist(),
+        'confusion_matrix': confusion_matrix(targets_all, preds_all, labels=labels).tolist(),
     }
 
+
 def save_results(results, filepath):
-    # Load existing or create new
+    """Upsert by run_name, so re-running a run never creates duplicate rows."""
+    data = []
     if os.path.exists(filepath):
         with open(filepath, 'r') as f:
             data = json.load(f)
-    else:
-        data = []
-        
+    data = [d for d in data if d.get('run_name') != results.get('run_name')]
     data.append(results)
-    
-    with open(filepath, 'w') as f:
+    tmp = filepath + '.tmp'
+    with open(tmp, 'w') as f:
         json.dump(data, f, indent=4)
-        
+    os.replace(tmp, filepath)
+
+
 def load_config(filepath):
     with open(filepath, 'r') as f:
-        config = json.load(f)
-    return config
+        return json.load(f)
+
 
 def plot_confusion_matrix(cm, classes, filename):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
     plt.title('Confusion Matrix')
