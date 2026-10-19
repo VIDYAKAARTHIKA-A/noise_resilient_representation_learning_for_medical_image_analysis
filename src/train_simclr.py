@@ -1,4 +1,5 @@
 import os
+import math
 import torch
 from torch.optim import Adam
 from tqdm import tqdm
@@ -11,7 +12,8 @@ def train_simclr(config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Training SimCLR on {device}")
     loader = get_simclr_dataloader(config)
-    model = ResNet18SimCLR(proj_dim=config['simclr_proj_dim']).to(device)
+    model = ResNet18SimCLR(proj_dim=config['simclr_proj_dim'],
+                           pretrained=config.get('simclr_from_imagenet', False)).to(device)
     optimizer = Adam(model.parameters(), lr=config['simclr_lr'], weight_decay=config['weight_decay'])
     criterion = NTXentLoss(temperature=config['simclr_temperature'])
     epochs = config['simclr_epochs']
@@ -26,7 +28,13 @@ def train_simclr(config):
         start_epoch, best_loss = ck['epoch'] + 1, ck.get('best_loss', float('inf'))
         print(f"Resumed SimCLR at epoch {start_epoch}")
 
+    wu = min(10, max(1, epochs // 10))
+    def lr_scale(e):   # linear warmup then cosine decay, set per epoch so resume still works
+        return (e + 1) / wu if e < wu else 0.5 * (1 + math.cos(math.pi * (e - wu) / max(1, epochs - wu)))
+
     for epoch in range(start_epoch, epochs):
+        for g in optimizer.param_groups:
+            g['lr'] = config['simclr_lr'] * lr_scale(epoch)
         model.train()
         running = 0.0
         pbar = tqdm(loader, desc=f"Epoch {epoch+1}/{epochs}")

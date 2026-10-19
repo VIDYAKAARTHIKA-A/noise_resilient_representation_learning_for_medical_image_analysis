@@ -62,7 +62,8 @@ class SimCLRTransform:
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
             transforms.RandomRotation(30),
-            transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.2, 0.02)], p=0.8),
+            transforms.RandomApply([transforms.ColorJitter(0.6, 0.6, 0.4, 0.05)], p=0.8),
+            transforms.RandomApply([transforms.GaussianBlur(23, sigma=(0.1, 2.0))], p=0.5),
             transforms.RandomGrayscale(p=0.1),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
@@ -106,6 +107,27 @@ def inject_noise(df, noise_level, num_classes, seed=42, noise_type='uniform_glob
     return noisy_df
 
 
+def _group_split(df, config):
+    """70/15/15 split in which all images of one lesion stay in the same part (no near-duplicate leakage).
+    Needs lesion_id: either a column of the csv or ISIC_2019_Training_Metadata.csv (config['metadata_path'])."""
+    from sklearn.model_selection import StratifiedGroupKFold
+    key = df['image'].astype(str).str.replace('.jpg', '', regex=False)
+    lid = df['lesion_id'] if 'lesion_id' in df.columns else None
+    mp = config.get('metadata_path')
+    if lid is None and mp and os.path.exists(mp):
+        m = pd.read_csv(mp)[['image', 'lesion_id']]
+        m['image'] = m['image'].astype(str).str.replace('.jpg', '', regex=False)
+        lid = pd.DataFrame({'image': key}).merge(m, on='image', how='left')['lesion_id']
+    if lid is None:
+        raise ValueError("group_split=true needs a lesion_id column or config['metadata_path']")
+    groups = lid.reset_index(drop=True).where(lid.reset_index(drop=True).notna(), 'img_' + key.reset_index(drop=True))
+    y, seed = df['label'].values, config['seed']
+    folds = [te for _, te in StratifiedGroupKFold(10, shuffle=True, random_state=seed).split(df, y, groups)]
+    hold, tr = np.concatenate(folds[:3]), np.concatenate(folds[3:])
+    h_folds = [te for _, te in StratifiedGroupKFold(2, shuffle=True, random_state=seed).split(hold, y[hold], groups.values[hold])]
+    return df.iloc[tr], df.iloc[hold[h_folds[0]]], df.iloc[hold[h_folds[1]]]
+
+
 def prepare_data(config):
     csv_path = config['csv_path']
     if not os.path.exists(csv_path):
@@ -121,8 +143,11 @@ def prepare_data(config):
     if 'label' not in df.columns:
         df['label'] = df.apply(get_label, axis=1)
 
-    train_df, test_df = train_test_split(df, test_size=0.3, random_state=config['seed'], stratify=df['label'])
-    val_df, test_df = train_test_split(test_df, test_size=0.5, random_state=config['seed'], stratify=test_df['label'])
+    if config.get('group_split', False):
+        train_df, val_df, test_df = _group_split(df, config)
+    else:
+        train_df, test_df = train_test_split(df, test_size=0.3, random_state=config['seed'], stratify=df['label'])
+        val_df, test_df = train_test_split(test_df, test_size=0.5, random_state=config['seed'], stratify=test_df['label'])
     return (train_df.reset_index(drop=True), val_df.reset_index(drop=True),
             test_df.reset_index(drop=True), len(CLASSES))
 
@@ -170,5 +195,5 @@ def get_dataloaders(config, noise_level=0.0, noise_type='uniform_global', val_mo
 def get_simclr_dataloader(config):
     train_df, _, _, _ = prepare_data(config)
     ds = ISIC2019Dataset(train_df, _img_dir(config), transform=SimCLRTransform(config['image_size']))
-    return DataLoader(ds, batch_size=config['batch_size'], shuffle=True,
+    return DataLoader(ds, batch_size=config.get('simclr_batch_size', config['batch_size']), shuffle=True,
                       num_workers=config['num_workers'], drop_last=True)

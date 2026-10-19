@@ -4,9 +4,9 @@ from torchvision.models import resnet18, ResNet18_Weights
 
 
 class ResNet18SimCLR(nn.Module):
-    def __init__(self, proj_dim=128):
+    def __init__(self, proj_dim=128, pretrained=False):
         super().__init__()
-        self.backbone = resnet18(weights=None)
+        self.backbone = resnet18(weights=ResNet18_Weights.DEFAULT if pretrained else None)
         dim_mlp = self.backbone.fc.in_features
         self.backbone.fc = nn.Identity()
         self.projection_head = nn.Sequential(

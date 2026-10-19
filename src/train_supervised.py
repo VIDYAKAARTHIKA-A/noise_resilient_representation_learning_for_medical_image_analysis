@@ -26,7 +26,22 @@ STAGES = {
     'v2_simclr_init':  dict(init='simclr',   **_V2),   # same init as simclr_finetune -> clean comparison
 }
 
-DEFAULT_V2 = dict(ref_encoder='imagenet', knn_k=20, knn_thresh=0.3, knn_temp=0.1, w_knn=0.7,
+_V3 = dict(method='v2', use_knn=True, use_gmm=True, relabel=True,
+           logit_adjust=False, class_balance=True)
+
+STAGES.update({
+    # v3 = v2 + class-balanced weights from E_c(t), class-relative kNN threshold,
+    #      rare-class protection (no relabel out of rare classes, higher weight floor), CE loss
+    'v3_imagenet':     dict(init='imagenet', ref='imagenet', **_V3),
+    'v3_simclr':       dict(init='simclr',   ref='simclr', freeze_warmup=True, **_V3),
+    'v3s_no_relabel':  dict(init='simclr', ref='simclr', freeze_warmup=True, **{**_V3, 'relabel': False}),
+    'v3s_no_gmm':      dict(init='simclr', ref='simclr', freeze_warmup=True, **{**_V3, 'use_gmm': False}),
+    'v3s_no_knn':      dict(init='simclr', ref='simclr', freeze_warmup=True, **{**_V3, 'use_knn': False, 'relabel': False}),
+    'v3s_no_cb':       dict(init='simclr', ref='simclr', freeze_warmup=True, **{**_V3, 'class_balance': False}),
+})
+
+DEFAULT_V2 = dict(cb_beta=1.0, rare_frac=0.05, rare_keep_frac=0.7, rare_w_floor=1.0,
+                  knn_rel_thresh=True, ref_encoder='imagenet', knn_k=20, knn_thresh=0.3, knn_temp=0.1, w_knn=0.7,
                   ema=0.7, warmup_epochs=2, nu=10.0, min_keep_frac=0.2, w_floor=0.5,
                   relabel_conf=0.9, relabel_vote=0.5, loss='gce', gce_q=0.7, logit_tau=1.0,
                   refresh_features_every=0, log_every=5)
@@ -59,6 +74,7 @@ def train_supervised(config, noise_level, stage, run_name, noise_type='uniform_g
     is_v2 = spec['method'] == 'v2'
     use_knn, use_gmm = spec.get('use_knn', False), spec.get('use_gmm', False)
     relabel, use_la = spec.get('relabel', False), spec.get('logit_adjust', False)
+    use_cb = spec.get('class_balance', False)
     v2 = {**DEFAULT_V2, **config.get('v2', {})}
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"[{run_name}] stage={stage} noise={noise_level:.0%} type={noise_type} val={val_mode} seed={seed} on {device}")
@@ -71,6 +87,7 @@ def train_supervised(config, noise_level, stage, run_name, noise_type='uniform_g
     clean_gt = np.asarray(train_ds.is_clean).astype(bool)               # analysis only
     true = train_ds.df['original_label'].values.astype(np.int64)        # analysis only
     ar = np.arange(N)
+    rare = np.bincount(orig, minlength=C) < v2['rare_frac'] * N          # classes protected from the filter
 
     model = ResNet18Classifier(C, init=spec['init']).to(device)
     optimizer = Adam(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
@@ -85,7 +102,7 @@ def train_supervised(config, noise_level, stage, run_name, noise_type='uniform_g
         votes = neighbor_votes(knn_neighbors(feats, v2['knn_k']), orig, C)
         knn_raw = votes[ar, orig]
     if need_nbr:
-        ref = build_reference_encoder(v2['ref_encoder']).to(device)
+        ref = build_reference_encoder(spec.get('ref', v2['ref_encoder'])).to(device)
         set_neighbors(extract_features(ref, score_loader, device))
         del ref
 
@@ -132,7 +149,14 @@ def train_supervised(config, noise_level, stage, run_name, noise_type='uniform_g
                     losses = -np.log(np.clip(probs[ar, orig], 1e-7, 1.0))
                     p_gmm = gmm_clean_prob(losses, orig, nu=v2['nu'], seed=seed)
 
-            p_knn = knn_clean_score(knn_raw, v2['knn_thresh'], v2['knn_temp']) if use_knn else None
+            p_knn = None
+            if use_knn:
+                thr = np.full(C, v2['knn_thresh'])
+                if v2['knn_rel_thresh']:    # rare classes have few same-label neighbours by construction
+                    for c in range(C):
+                        if (orig == c).any():
+                            thr[c] = max(0.05, min(v2['knn_thresh'], 0.5 * np.median(knn_raw[orig == c])))
+                p_knn = knn_clean_score(knn_raw, thr[orig], v2['knn_temp'])
             if p_knn is not None and p_gmm is not None:
                 p = v2['w_knn'] * p_knn + (1 - v2['w_knn']) * p_gmm
             elif p_knn is not None:
@@ -153,6 +177,7 @@ def train_supervised(config, noise_level, stage, run_name, noise_type='uniform_g
                 vote_arg, vote_conf = votes.argmax(1), votes.max(1)
                 flip = ((pred == vote_arg) & (pred != orig)
                         & (conf >= v2['relabel_conf']) & (vote_conf >= v2['relabel_vote']))
+                flip &= ~rare[orig]
                 work[flip] = pred[flip]
                 p_eff[flip] = 0.5 * (conf[flip] + vote_conf[flip])
 
@@ -162,12 +187,18 @@ def train_supervised(config, noise_level, stage, run_name, noise_type='uniform_g
             for c in range(C):
                 idx_c = np.where(work == c)[0]
                 if len(idx_c):
-                    k = max(1, int(np.ceil(v2['min_keep_frac'] * len(idx_c))))
+                    kf, fl = ((v2['rare_keep_frac'], v2['rare_w_floor']) if (use_cb and rare[c])
+                              else (v2['min_keep_frac'], v2['w_floor']))
+                    k = max(1, int(np.ceil(kf * len(idx_c))))
                     top = idx_c[np.argsort(-w[idx_c])[:k]]
-                    w[top] = np.maximum(w[top], v2['w_floor'])
+                    w[top] = np.maximum(w[top], fl)
 
             # E_c(t): clean mass per class actually used for training -> prior for logit adjustment
             E_c = np.bincount(work, weights=w, minlength=C) + 1e-6
+            if use_cb:   # imbalance correction driven by the estimated CLEAN mass per class
+                cls_w = (E_c.sum() / (C * E_c)) ** v2['cb_beta']
+                w = w * cls_w[work]
+                w = w / max(w.mean(), 1e-8)
             adjust = v2['logit_tau'] * np.log(E_c / E_c.sum()) if use_la else np.zeros(C)
             adjust_t = torch.tensor(adjust, dtype=torch.float32, device=device)
             sample_w = torch.tensor(w, dtype=torch.float32, device=device)
@@ -176,6 +207,10 @@ def train_supervised(config, noise_level, stage, run_name, noise_type='uniform_g
             if noise_level > 0 and (epoch == warm or (epoch - warm) % v2['log_every'] == 0):
                 _log_detection(log_path, epoch, C, orig, clean_gt, true, work, w,
                                knn_raw if use_knn else np.zeros(N), p_gmm, clean_ema, flip)
+
+        if spec.get('freeze_warmup'):   # noisy labels cannot touch the label-free features during warmup
+            for p_ in model.backbone.parameters():
+                p_.requires_grad = epoch >= v2['warmup_epochs']
 
         # ================= M-step: gradient steps =================
         model.train()
