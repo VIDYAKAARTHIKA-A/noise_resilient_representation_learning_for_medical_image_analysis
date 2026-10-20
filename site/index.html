@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Noise-Resilient Representation Learning for Medical Image Analysis</title>
+<style>
+:root{--bg:#0b0d0f;--card:#14181c;--line:#262c33;--tx:#e5e7eb;--mu:#9ca3af;--ac:#10b981;--vi:#a78bfa;color-scheme:dark}
+@media(prefers-color-scheme:light){:root[data-t=auto]{--bg:#f6f6f4;--card:#fff;--line:#dcdcd6;--tx:#1a1a1a;--mu:#5b5f66;--ac:#047857;--vi:#6d28d9;color-scheme:light}}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:110px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 system-ui,Segoe UI,sans-serif}
+code,.m{font-family:ui-monospace,Consolas,monospace;font-size:.85em}
+header{position:sticky;top:0;z-index:9;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.hd{max-width:1100px;margin:auto;padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;justify-content:space-between}
+.hd b{font-size:.95rem}.tag{font-size:.72rem;color:var(--mu)}.st{color:#fbbf24;border:1px solid #fbbf2455;border-radius:99px;padding:1px 8px;font-size:.72rem}
+nav{max-width:1100px;margin:auto;display:flex;gap:2px;overflow-x:auto;padding:0 12px}
+nav a{color:var(--mu);text-decoration:none;padding:7px 11px;font-size:.85rem;white-space:nowrap;border-bottom:2px solid transparent}
+nav a.on,nav a:hover{color:var(--ac);border-color:var(--ac)}
+#bar{height:2px;background:linear-gradient(90deg,var(--ac),var(--vi));width:0}
+main{max-width:1100px;margin:auto;padding:0 16px 80px}
+section{padding:56px 0 8px}h2{font-size:1.7rem;margin:0 0 6px}h3{margin:24px 0 8px}
+.lead{color:var(--mu);max-width:760px}h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.12;margin:48px 0 12px;max-width:800px}
+h1 span{color:var(--ac)}
+.g{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.c{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.k{font-size:1.9rem;font-weight:700;color:var(--ac);font-family:ui-monospace,monospace}.s{color:var(--mu);font-size:.82rem}
+.badge{font-size:.68rem;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;border:1px solid}
+.v{color:#10b981;border-color:#10b98166}.d{color:var(--ac);border-color:#10b98166}.p{color:#fbbf24;border-color:#fbbf2466}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+button,select{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;font-size:.85rem;cursor:pointer}
+button.on{border-color:var(--ac);color:var(--ac)}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.row{display:grid;grid-template-columns:54px 1fr 150px;gap:8px;align-items:center;margin:5px 0;font-size:.85rem}
+.trk{background:#ffffff0d;border-radius:5px;height:18px;overflow:hidden;display:flex}.trk i{display:block;height:100%;transition:width .4s}
+.note{border-left:3px solid var(--vi);padding:6px 12px;color:var(--mu);font-size:.88rem;margin:12px 0}
+.warn{border-color:#fbbf24}
+table{border-collapse:collapse;font-size:.8rem}td,th{padding:0;text-align:center}.cm td,.cm th{width:46px;height:38px;border:1px solid var(--bg)}
+.cm td{cursor:pointer}.cm td:focus-visible{outline:2px solid var(--ac)}.sc{overflow-x:auto}
+svg text{fill:var(--mu);font-size:11px}.leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8rem;color:var(--mu)}.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.step{display:flex;gap:6px;overflow-x:auto}.pre{background:#00000040;border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:.78rem}
+footer{border-top:1px solid var(--line);padding:24px 16px;text-align:center;color:var(--mu);font-size:.85rem}a{color:var(--ac)}
+</style></head><body>
+<header><div class="hd"><b>Noise-Resilient Representation Learning for Medical Image Analysis</b>
+<span class="tag">Computer Vision / Robust Representation Learning · ISIC 2019 · <a href="https://github.com/VIDYAKAARTHIKA-A/noise_resilient_representation_learning_for_medical_image_analysis">repository</a> <span class="st">experimental · single-run results</span></span></div>
+<nav id="nav"></nav><div id="bar"></div></header>
+<main>
+<section id="overview"><h1>Learning Reliable Medical Representations from <span>Noisy Labels</span></h1>
+<p class="lead">An undergraduate honours project asking whether noise-aware sample weighting, kNN/GMM label-cleanliness estimates and relabeling can improve classification of dermoscopy images when training labels are corrupted and the eight diagnostic classes are heavily imbalanced. Research visualization only: not clinically validated and not for diagnosis.</p>
+<div class="g" id="kpis"></div>
+<p class="note">Every number is labelled: <span class="badge v">measured</span> from your run outputs, <span class="badge d">calculated</span> from measured data or code, <span class="badge p">pending</span> not available yet.</p></section>
+
+<section id="dataset"><h2>Dataset</h2><p class="lead">ISIC 2019, 8 classes. Split is a stratified 70/15/15 (<code>train_test_split</code>, seed 42); noise touches the training split only.</p>
+<div class="ctl" id="dsctl"></div><div id="dsbars"></div>
+<div class="note">Test counts are measured (sum 3,800). Noisy-train counts come from your detection logs (sum 17,731 = 70% of 25,331).</div></section>
+
+<section id="problem"><h2>The Problem: Imbalance and Label Noise</h2>
+<p class="lead">The noise policy is <code>uniform_global</code>: exactly <code>int(p·N)</code> random training samples get a label drawn uniformly from the <em>other</em> classes. Large classes lose labels to small ones, and small classes are flooded with wrong ones.</p>
+<div class="ctl"><label for="ns">Noise level: <b id="nv"></b></label><input id="ns" type="range" min="1" max="4" value="4" step="1"></div>
+<div class="g" id="nk"></div><h3>Fraction of each <em>given</em> label that is actually correct <span class="badge v">from logs</span></h3><div id="cl"></div>
+<div class="note">With 40% noise only about 9% of samples labelled DF and 10% labelled VASC are truly DF or VASC. This is a property of the injection policy, not of the model.</div>
+<p>Accuracy alone hides this: on the test set NV is 51% of images (1,931 of 3,800) while DF is under 1% (36). A model can score well while missing DF and SCC entirely, so macro metrics and per-class recall are reported.</p></section>
+
+<section id="method"><h2>Methodology</h2>
+<p class="lead">The implemented pipeline, end to end: data and noise, SimCLR pretraining, supervised baselines, and the proposed noise-resilient training.</p>
+<div class="sc"><svg id="arch" viewBox="0 0 1100 650" width="100%" style="min-width:860px" role="img" aria-label="Architecture and training pipeline"></svg></div>
+<div class="leg" id="alg"></div>
+<h3>Stage details</h3>
+<div class="step" id="steps" role="tablist"></div><div class="c" id="stepbody" style="margin-top:8px"></div>
+</section>
+
+<section id="results"><h2>Experiments &amp; Results</h2>
+<p class="lead">Test set, 3,800 images, single run per cell (single run per cell).</p>
+<div class="ctl" id="mctl"></div><div class="sc"><svg id="lc" viewBox="0 0 640 300" width="100%" role="img" aria-label="Metric versus noise level"></svg></div><div class="leg" id="lg"></div>
+<h3>Per-class F1</h3><div class="ctl"><label for="pn">Noise</label><select id="pn"></select></div><div id="pc"></div>
+<h3>Confusion matrix <span class="badge v">measured</span></h3>
+<div class="ctl"><select id="cs" aria-label="run"></select><button id="cv" class="on">normalized</button></div>
+<div class="sc"><table class="cm" id="cmt"></table></div><p id="cmx" class="s" aria-live="polite">Select a cell. Rows = true class, columns = predicted.</p>
+<div class="note">Available matrices: baseline and proposed at 0% and 40% noise. The remaining 11 runs are in your results.json — add them to <code>D.cm</code>.</div>
+<h3>What do the metrics mean?</h3>
+<details class="c"><summary>Accuracy, precision, recall, F1</summary><p>Accuracy = correct / all. Precision = TP/(TP+FP); recall = TP/(TP+FN); F1 = 2PR/(P+R). Averages here are <b>macro</b> (unweighted mean over the 8 classes, sklearn <code>zero_division=0</code>) unless labelled weighted. Balanced accuracy equals macro-recall in this code, so it is shown once.</p></details></section>
+
+<section id="conclusions"><h2>Conclusions</h2><div class="g" id="cc"></div></section>
+</main><footer>Research visualization · not for clinical use · data: your run outputs (single run) · <a href="https://github.com/VIDYAKAARTHIKA-A/noise_resilient_representation_learning_for_medical_image_analysis">GitHub</a></footer>
+<script>
+const C=['MEL','NV','BCC','AK','BKL','DF','VASC','SCC'],FN=['Melanoma','Melanocytic nevus','Basal cell carcinoma','Actinic keratosis','Benign keratosis','Dermatofibroma','Vascular lesion','Squamous cell carcinoma'];
+const COL=['#f87171','#facc15','#a78bfa','#fb923c','#a3e635','#f472b6','#e879f9','#d4a373'];
+const NZ=[0,10,20,30,40],ST=['baseline','simclr_finetune','proposed'],SC={baseline:'#9ca3af',simclr_finetune:'#a78bfa',proposed:'#10b981'};
+const D={test:[679,1931,499,130,393,36,38,94],
+tr:{10:[3047,8241,2347,794,1887,364,420,631],20:[2975,7427,2325,965,1991,605,628,815],30:[2849,6637,2349,1155,2028,873,840,1000],40:[2733,5876,2318,1358,2029,1127,1098,1192]},
+fc:{10:[.9347,.984,.896,.6952,.8776,.4038,.3762,.6101],20:[.8531,.968,.8052,.4953,.7519,.2099,.2134,.4294],30:[.7827,.9447,.7046,.3593,.642,.1352,.1429,.302],40:[.6923,.9187,.6156,.2577,.5461,.0923,.0965,.2131]},
+M:{accuracy:{baseline:[.7668,.6476,.6245,.6484,.6053],simclr_finetune:[.7395,.6255,.6332,.6195,.6245],proposed:[.8132,.8039,.7542,.7461,.715]},
+macro_f1:{baseline:[.7025,.486,.4711,.4524,.4459],simclr_finetune:[.6736,.458,.4562,.451,.4362],proposed:[.7211,.7049,.5674,.5805,.509]},
+macro_precision:{baseline:[.6871,.4554,.4402,.4315,.4267],simclr_finetune:[.6469,.4288,.4409,.4273,.4158],proposed:[.7786,.7299,.5557,.625,.5256]},
+macro_recall:{baseline:[.7285,.6224,.5873,.5383,.51],simclr_finetune:[.7093,.5528,.567,.5561,.5159],proposed:[.6839,.6836,.6077,.5523,.5101]},
+weighted_f1:{baseline:[.772,.674,.6488,.6665,.633],simclr_finetune:[.7443,.6459,.6628,.6491,.6438],proposed:[.8073,.7998,.7557,.7377,.7111]}},
+f1:{baseline:[[.6535,.8606,.7818,.5415,.6602,.747,.8611,.514],[.5705,.7787,.7031,.399,.5498,.2316,.3351,.3204],[.5691,.7524,.6482,.4229,.5159,.2308,.4054,.2245],[.5723,.7865,.6887,.3869,.5,.1739,.3432,.1678],[.556,.7431,.6542,.3173,.4611,.0947,.5192,.2212]],
+simclr_finetune:[[.618,.8471,.7352,.5668,.5811,.6316,.9114,.4978],[.5543,.7616,.6855,.3489,.4403,.1667,.4553,.2512],[.5402,.7849,.6899,.3841,.5076,.106,.3771,.2594],[.5634,.7755,.6437,.3351,.4497,.1732,.4275,.2403],[.5585,.7559,.6882,.3534,.4667,.2342,.2525,.1798]],
+proposed:[[.6955,.8962,.8373,.5738,.6794,.7576,.8358,.4932],[.7267,.8814,.8122,.5858,.6694,.6765,.8267,.4607],[.6501,.8659,.7774,.4842,.6241,.3125,.4746,.3506],[.6165,.8662,.7383,.4252,.5581,.3333,.8406,.2657],[.5934,.8535,.7284,.3871,.4872,.1404,.75,.1324]]},
+cm:{'baseline @0%':[[445,99,34,22,66,5,0,8],[180,1559,58,5,117,6,1,5],[22,7,421,19,16,1,2,11],[2,1,26,75,14,2,0,10],[28,20,18,15,306,1,0,5],[0,3,2,0,0,31,0,0],[1,2,3,1,0,0,31,0],[5,1,16,10,15,1,0,46]],
+'baseline @40%':[[382,85,39,14,119,19,3,18],[243,1209,63,26,241,88,25,36],[13,1,333,24,86,6,8,28],[4,0,31,43,40,3,0,9],[44,24,12,18,273,8,3,11],[2,3,8,2,8,8,0,5],[2,0,7,0,1,1,27,0],[5,1,26,14,23,0,0,25]],
+'proposed @0%':[[434,170,29,9,32,1,1,3],[77,1788,21,2,40,1,0,2],[11,15,445,13,10,0,0,5],[4,7,31,68,18,0,0,2],[35,67,12,9,266,0,0,4],[1,5,3,0,2,25,0,0],[0,5,3,0,0,2,28,0],[7,2,20,6,22,1,0,36]],
+'proposed @40%':[[348,181,49,19,75,2,2,3],[77,1643,49,16,133,7,2,4],[21,13,413,18,24,6,0,4],[4,4,35,54,22,1,0,10],[29,62,42,29,219,0,2,10],[4,11,7,2,7,4,0,1],[2,3,3,0,1,1,27,1],[9,2,37,11,25,0,1,9]]}};
+const $=s=>document.querySelector(s),f=(x,d=4)=>x.toFixed(d),pc=x=>(x*100).toFixed(1)+'%';
+const SECS=[['overview','Overview'],['dataset','Dataset'],['problem','The Problem'],['method','Methodology'],['results','Experiments & Results'],['conclusions','Conclusions']];
+$('#nav').innerHTML=SECS.map(s=>`<a href="#${s[0]}">${s[1]}</a>`).join('');
+const links=[...document.querySelectorAll('nav a')];
+addEventListener('scroll',()=>{const h=document.documentElement;$('#bar').style.width=(scrollY/(h.scrollHeight-innerHeight)*100)+'%';let cur=0;SECS.forEach((s,i)=>{if($('#'+s[0]).getBoundingClientRect().top<160)cur=i});links.forEach((a,i)=>a.classList.toggle('on',i==cur))});
+$('#kpis').innerHTML=[['25,331','images (full ISIC 2019 train set; train 17,731 · test 3,800)','calculated'],['8','diagnostic classes','measured'],['0–40%','label noise, uniform_global','measured'],['53.6×','NV : DF imbalance (test 1,931 : 36)','calculated'],['0.805 → 0.715','proposed accuracy at 10 → 40% noise (baseline 0.648 → 0.605)','measured'],['0.705 vs 0.486','macro-F1 proposed vs baseline at 10% noise','measured']].map(k=>`<div class="c"><div class="k">${k[0]}</div><div class="s">${k[1]} <span class="badge ${k[2]=='measured'?'v':'d'}">${k[2]}</span></div></div>`).join('');
+// dataset
+let dsm='counts';$('#dsctl').innerHTML=`<button data-m="counts" class="on">Counts</button><button data-m="pct">Percent</button><select id="dsel"><option value="test">Test split (clean)</option>${[10,20,30,40].map(n=>`<option value="${n}">Train, ${n}% noise (given labels)</option>`).join('')}</select>`;
+function ds(){const v=$('#dsel').value,a=v=='test'?D.test:D.tr[v],t=a.reduce((x,y)=>x+y),mx=Math.max(...a);
+$('#dsbars').innerHTML=a.map((n,i)=>({n,i})).sort((x,y)=>y.n-x.n).map(({n,i})=>`<div class="row"><b style="color:${COL[i]}">${C[i]}</b><div class="trk" title="${FN[i]}"><i style="width:${n/mx*100}%;background:${COL[i]}"></i></div><span class="m">${dsm=='pct'?pc(n/t):n.toLocaleString()} <span class="s">${FN[i].slice(0,14)}</span></span></div>`).join('')+`<p class="s">Total ${t.toLocaleString()}. ${v=='test'?'Measured':'From detection logs'}.</p>`}
+$('#dsctl').onclick=e=>{if(e.target.dataset.m){dsm=e.target.dataset.m;[...$('#dsctl').querySelectorAll('button')].forEach(b=>b.classList.toggle('on',b==e.target));ds()}};$('#dsel').onchange=ds;ds();
+// problem
+function pr(){const l=+$('#ns').value,n=[10,20,30,40][l-1],N=17731,k=Math.floor(n/100*N);$('#nv').textContent=n+'%';
+$('#nk').innerHTML=`<div class="c"><div class="k">${k.toLocaleString()}</div><div class="s">training labels flipped = int(${n/100}×${N}) <span class="badge d">calculated</span></div></div><div class="c"><div class="k">${(N-k).toLocaleString()}</div><div class="s">labels unchanged</div></div><div class="c"><div class="k">${pc(D.fc[n].reduce((a,b,i)=>a+b*D.tr[n][i],0)/N)}</div><div class="s">overall clean rate (from logs)</div></div>`;
+$('#cl').innerHTML=C.map((c,i)=>`<div class="row"><b style="color:${COL[i]}">${c}</b><div class="trk"><i style="width:${D.fc[n][i]*100}%;background:${COL[i]}"></i></div><span class="m">${pc(D.fc[n][i])} of ${D.tr[n][i]}</span></div>`).join('')}
+$('#ns').oninput=pr;pr();
+// method
+const STEPS=[['1 Noise','<b>inject_noise()</b>: <code>uniform_global</code> picks exactly int(p·N) training samples (seeded <code>default_rng</code>) and gives each a uniformly random <em>other</em> class. <code>original_label</code> and <code>is_clean</code> are kept for analysis only. Val and test labels are never corrupted.'],
+['2 Architecture','ResNet-18 backbone (fc removed, 512-d features). Classifier: one linear layer 512→8. SimCLR head: MLP 512→512→128. The frozen reference encoder for kNN is a backbone only (ImageNet or SimCLR weights).'],
+['3 SimCLR','Two views per image (random-resized-crop, flips, rotation 30°, colour jitter, grayscale, Gaussian blur), shared ResNet-18 + projection head, NT-Xent with τ=0.2, batch 256, Adam lr 3e-4 with warm-up and cosine decay, initialised from ImageNet. Best-loss checkpoint is reused by <code>simclr_finetune</code> and <code>v3_simclr</code>.'],
+['4 Loss tracking','After warm-up (3 epochs), per-sample loss −log p(ỹᵢ|xᵢ) is computed on un-augmented training images each epoch and fed to the class-wise GMM. High loss does not prove a label is wrong, so it is combined with kNN evidence.'],
+['5 Proposed','Clean probability = 0.7·kNN agreement (k=20, threshold relative to each class median) + 0.3·class-wise GMM (shared-variance prior ν=10), smoothed by EMA 0.7. Relabel when model and kNN confidently agree (conf ≥ 0.9, vote ≥ 0.5), never out of rare classes (&lt;5% of data). Top 20% per class keep weight ≥ 0.5 (rare: top 70%, ≥ 1.0). Clean mass E_c = Σ weights per class gives class-balanced weights (ΣE/(C·E_c)), then weighted cross-entropy. <code>v3_simclr</code> freezes the backbone during warm-up.'],
+['6 Evaluation','Clean validation macro-F1 selects the best epoch (patience 8, max 40). Test metrics: accuracy; macro precision, recall, F1; weighted F1; per-class F1; confusion matrix.']];
+$('#steps').innerHTML=STEPS.map((s,i)=>`<button role="tab" data-i="${i}" class="${i?'':'on'}">${s[0]}</button>`).join('');$('#stepbody').innerHTML=STEPS[0][1];
+$('#steps').onclick=e=>{const i=e.target.dataset.i;if(i==null)return;[...$('#steps').children].forEach(b=>b.classList.toggle('on',b==e.target));$('#stepbody').innerHTML=STEPS[i][1]};
+
+(function(){const L={d:'#9ca3af',s:'#a78bfa',b:'#fb923c',p:'#10b981'};let o='<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#9ca3af"/></marker></defs>';
+const box=(x,y,t,s,c)=>`<g><rect x="${x}" y="${y}" width="190" height="62" rx="9" fill="var(--card)" stroke="${c}" stroke-width="1.5"/><rect x="${x}" y="${y}" width="5" height="62" rx="2" fill="${c}"/><text x="${x+16}" y="${y+26}" style="fill:var(--tx);font-size:12.5px;font-weight:600">${t}</text><text x="${x+16}" y="${y+46}" style="font-size:10.5px">${s}</text></g>`;
+const ar=(a,b,c,d,dash)=>`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"${dash?' stroke-dasharray="5 4"':''}/>`;
+const pa=(d,dash)=>`<path d="${d}" fill="none" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ar)"${dash?' stroke-dasharray="5 4"':''}/>`;
+const lab=(y,t,c)=>`<text x="20" y="${y}" style="fill:${c};font-size:11px;font-weight:700;letter-spacing:.06em">${t}</text>`;
+const X=[20,235,450,665,880];
+const row=(y,c,items,rev)=>items.map((it,i)=>box(X[rev?4-i:i],y,it[0],it[1],c)).join('')+items.slice(1).map((_,i)=>rev?ar(X[4-i],y+31,X[3-i]+190,y+31):ar(X[i]+190,y+31,X[i+1],y+31)).join('');
+o+=lab(36,'DATA &amp; NOISE',L.d)+row(64,L.d,[['ISIC 2019 CSV','25,331 images · 8 classes'],['Stratified split','70 / 15 / 15 · seed 42'],['Noise injection','train only · uniform_global'],['Noisy training set','ỹ given · is_clean hidden'],['Clean val / test','labels never corrupted']]).replace(ar(665+190,95,880,95),'');
+o+=pa('M330 64V50H975V64');
+o+=lab(160,'STAGE 1 · SIMCLR (PRETRAIN ONCE)',L.s)+row(180,L.s,[['Two augmented views','crop · flip · rotate · jitter · blur'],['Shared ResNet-18','ImageNet init · fc removed'],['Projection head','MLP 512 → 512 → 128'],['NT-Xent loss','τ = 0.2 · batch 256'],['simclr_best.pth','lowest-loss checkpoint']]);
+o+=pa('M975 242V268H190V310',true)+`<text x="400" y="262" style="font-size:10.5px">init weights (simclr_finetune, v3_simclr)</text>`;
+o+=lab(296,'STAGE 2 · BASELINES',L.b)+row(310,L.b,[['ResNet-18 backbone','ImageNet or SimCLR init'],['Linear classifier','512 → 8 logits'],['Class-weighted CE','trained on noisy labels ỹ'],['Clean-val early stop','macro-F1 · patience 8'],['Test evaluation','baseline · simclr_finetune']]);
+o+=lab(410,'STAGE 3 · PROPOSED NOISE-RESILIENT TRAINING · E-STEP (EVERY EPOCH AFTER WARM-UP)',L.p)+row(424,L.p,[['Reference encoder','frozen · ImageNet / SimCLR'],['kNN agreement','k=20 · class-relative threshold'],['Per-sample loss + GMM','class-wise · shared var. ν=10'],['Fuse + EMA','0.7·kNN + 0.3·GMM · EMA 0.7'],['Relabel + class floor','conf ≥ 0.9 · rare protected']]);
+o+=pa('M330 486V502H760V486')+`<text x="470" y="518" style="font-size:10.5px">GMM uses the classifier's softmax on the noisy label</text>`;
+o+=lab(536,'M-STEP · GRADIENT UPDATE',L.p)+pa('M975 486V548')+row(548,L.p,[['Clean mass E_c','Σ weights per class'],['Class-balanced weights','(ΣE / C·E_c), mean-normalised'],['Weighted CE update','mean(wᵢ · CE(f(xᵢ), ŷᵢ))'],['Clean-val early stop','macro-F1 · patience 8'],['Test evaluation','proposed method']],true);
+o+=`<text x="20" y="640" style="font-size:10.5px">E-step and M-step repeat each epoch (max 40). v3_simclr also freezes the backbone during the 3 warm-up epochs.</text>`;
+$('#arch').innerHTML=o;$('#alg').innerHTML=[['Data',L.d],['Stage 1 · SimCLR',L.s],['Stage 2 · baselines',L.b],['Stage 3 · proposed',L.p]].map(x=>`<span><i style="background:${x[1]}"></i>${x[0]}</span>`).join('')})();
+// results
+let met='macro_f1';const ML=Object.keys(D.M);$('#mctl').innerHTML=ML.map(m=>`<button data-m="${m}" class="${m==met?'on':''}">${m.replace('_',' ')}</button>`).join('');
+function lc(){const W=640,H=300,p=44,vs=ST.flatMap(s=>D.M[met][s]),lo=Math.floor(Math.min(...vs)*20)/20,hi=Math.ceil(Math.max(...vs)*20)/20,X=i=>p+i*(W-p-16)/4,Y=v=>H-30-(v-lo)/(hi-lo)*(H-50);
+let g='';for(let t=0;t<=4;t++){const v=lo+(hi-lo)*t/4;g+=`<line x1="${p}" x2="${W-16}" y1="${Y(v)}" y2="${Y(v)}" stroke="#ffffff14"/><text x="4" y="${Y(v)+4}">${v.toFixed(2)}</text>`}
+NZ.forEach((n,i)=>g+=`<text x="${X(i)-8}" y="${H-10}">${n}%</text>`);
+ST.forEach(s=>{const a=D.M[met][s];g+=`<polyline fill="none" stroke="${SC[s]}" stroke-width="2.5" points="${a.map((v,i)=>X(i)+','+Y(v)).join(' ')}"/>`+a.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v)}" r="4" fill="${SC[s]}"><title>${s} ${NZ[i]}%: ${v}</title></circle>`).join('')});
+$('#lc').innerHTML=g;$('#lg').innerHTML=ST.map(s=>`<span><i style="background:${SC[s]}"></i>${s}</span>`).join('')}
+$('#mctl').onclick=e=>{if(e.target.dataset.m){met=e.target.dataset.m;[...$('#mctl').children].forEach(b=>b.classList.toggle('on',b==e.target));lc()}};lc();
+$('#pn').innerHTML=NZ.map((n,i)=>`<option value="${i}">${n}%</option>`).join('');
+function pcl(){const i=+$('#pn').value;$('#pc').innerHTML=C.map((c,j)=>`<div style="margin:6px 0"><b style="color:${COL[j]}">${c}</b> <span class="s">${FN[j]} · test n=${D.test[j]}</span>`+ST.map(s=>{const v=D.f1[s][i][j];return `<div class="row" style="grid-template-columns:110px 1fr 50px"><span class="s">${s}</span><div class="trk"><i style="width:${v*100}%;background:${SC[s]}"></i></div><span class="m">${f(v)}</span></div>`}).join('')+'</div>').join('')}
+$('#pn').onchange=pcl;pcl();
+let norm=true;$('#cs').innerHTML=Object.keys(D.cm).map(k=>`<option>${k}</option>`).join('');
+function cm(){const k=$('#cs').value,m=D.cm[k];let h='<tr><th></th>'+C.map(c=>`<th scope="col">${c}</th>`).join('')+'</tr>';
+m.forEach((r,i)=>{const t=r.reduce((a,b)=>a+b);h+=`<tr><th scope="row" style="padding-right:6px">${C[i]}</th>`+r.map((v,j)=>{const q=v/t;return `<td tabindex="0" data-i="${i}" data-j="${j}" style="background:rgba(16,185,129,${.08+q*.9});color:${q>.5?'#001':'inherit'}" title="${v} (${pc(q)} of true ${C[i]})">${norm?(q*100).toFixed(0)+'%':v}</td>`}).join('')+'</tr>'});$('#cmt').innerHTML=h}
+function cx(e){const d=e.target.dataset;if(d.i==null)return;const m=D.cm[$('#cs').value],t=m[d.i].reduce((a,b)=>a+b),v=m[d.i][d.j];$('#cmx').textContent=d.i==d.j?`${v} of ${t} true ${FN[d.i]} images were correctly predicted (${pc(v/t)} recall).`:`${v} true ${FN[d.i]} images (${pc(v/t)}) were predicted as ${FN[d.j]}.`}
+$('#cmt').onclick=cx;$('#cmt').onkeydown=e=>{if(e.key=='Enter')cx(e)};$('#cs').onchange=cm;$('#cv').onclick=e=>{norm=!norm;e.target.textContent=norm?'normalized':'counts';cm()};cm();
+$('#cc').innerHTML=[['Research question','Can kNN/GMM clean-label estimation, relabeling and clean-mass class balancing keep classification usable when up to 40% of labels are wrong and classes are imbalanced?'],
+['What worked <span class="badge v">measured</span>','proposed has higher accuracy than baseline at every noise level (+0.05 to +0.16) and higher macro-F1 (largest gap at 10%: 0.705 vs 0.486). VASC F1 at 40%: 0.750 vs 0.519.'],
+['What did not <span class="badge v">measured</span>','Macro-recall is no better than baseline at 0% (0.684 vs 0.729) and essentially tied at 40% (0.510). At 40%, SCC recall fell to 9.6% (baseline 26.6%) and DF recall to 11.1% (baseline 22.2%); gains came mostly from precision.'],
+['Most affected minority classes','DF and SCC: lowest F1 at 40% noise in all three stages (proposed DF 0.14, SCC 0.13). Class-wise noise detection (see logs) is also weakest for these classes.'],
+['Future work (not implemented)','Repeated seeds, class-dependent noise, calibration of clean probabilities, independent datasets, lesion-grouped splits, per-sample tracing.']].map(x=>`<div class="c"><b>${x[0]}</b><p class="s" style="color:var(--tx)">${x[1]}</p></div>`).join('');
+</script></body></html>
