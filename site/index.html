@@ -198,7 +198,11 @@ $('#dz').innerHTML=DZ.map(d=>`<div class="c"><span class="badge ${d[2]}">${d[3]}
 const RARE=[['ISIC_0028659','SCC','BCC','BCC','33%','76%'],['ISIC_0058451','SCC','BKL','BCC','27%','70%'],['ISIC_0030844','SCC','MEL','BKL','27%','68%']];
 const COMMON=[['ISIC_0031156','NV','BKL','DF','26%','99%'],['ISIC_0031054','NV','AK','BCC','19%','99%'],['ISIC_0055695','NV','DF','MEL','22%','98%']];
 function exCard(e){return `<div class="c ex" id="c-${e[0]}">
-<img src="site_images/${e[0]}.jpg" alt="${e[0]}" onerror="this.outerHTML='<div class=ph>${e[0]}.jpg not found in site_images/</div>'">
+
+<img src="site/images/${e[0]}.jpg"
+     alt="${e[0]}"
+     onerror="this.outerHTML='<div class=ph>${e[0]}.jpg not found in site/images/</div>'">
+
 <div class="r2"><span>Image</span><span class="m">${e[0]}</span></div>
 <div class="r2"><span>Given label in training data</span><span class="bad">${e[2]}</span></div>
 <div class="hid" id="r-${e[0]}"><div class="r2"><span>True diagnosis</span><span class="good">${e[1]}</span></div>
