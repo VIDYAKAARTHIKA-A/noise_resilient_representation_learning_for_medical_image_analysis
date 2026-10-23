@@ -37,7 +37,6 @@ table{border-collapse:collapse;font-size:.8rem}td,th{padding:0;text-align:center
 svg text{fill:var(--mu);font-size:11px}.leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8rem;color:var(--mu)}.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
 .step{display:flex;gap:6px;overflow-x:auto}.pre{background:#00000040;border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:.78rem}
 footer{border-top:1px solid var(--line);padding:24px 16px;text-align:center;color:var(--mu);font-size:.85rem}a{color:var(--ac)}
-.ex img,.ex .ph{width:100%;border-radius:10px;aspect-ratio:1;object-fit:cover;background:#00000040;display:flex;align-items:center;justify-content:center;color:var(--mu);font-size:.75rem;text-align:center}
 .ex .r2{display:flex;justify-content:space-between;font-size:.85rem;margin:6px 0}.ex .r2 span:first-child{color:var(--mu)}
 .bad{color:#f87171;font-weight:600}.good{color:var(--ac);font-weight:600}.hid{display:none}.ex.done{border-color:var(--ac)}
 .ex button{width:100%;margin-top:8px}.dz .badge{margin:0 0 6px;display:inline-block}
@@ -199,9 +198,7 @@ const RARE=[['ISIC_0028659','SCC','BCC','BCC','33%','76%'],['ISIC_0058451','SCC'
 const COMMON=[['ISIC_0031156','NV','BKL','DF','26%','99%'],['ISIC_0031054','NV','AK','BCC','19%','99%'],['ISIC_0055695','NV','DF','MEL','22%','98%']];
 function exCard(e){return `<div class="c ex" id="c-${e[0]}">
 
-<img src="images/${e[0]}.jpg"
-     alt="${e[0]}"
-     onerror="this.outerHTML='<div class=ph>${e[0]}.jpg not found in site/images/</div>'">
+
 
 <div class="r2"><span>Image</span><span class="m">${e[0]}</span></div>
 <div class="r2"><span>Given label in training data</span><span class="bad">${e[2]}</span></div>
